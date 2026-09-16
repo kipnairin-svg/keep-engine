@@ -1,0 +1,29 @@
+{
+  "PolicyList": [
+    {
+      "PolicyNum": "PURE-88213-UMB",
+      "LOBCode": "PersonalUmbrella",
+      "Insured": { "FullName": "Whitfield Household" },
+      "PolicyEffDate": "2026-06-01",
+      "PolicyExpDate": "2027-06-01",
+      "AnnualPremiumAmt": 2100,
+      "Deductible": { "DeductibleAmt": 0 },
+      "CoverageSchedule": [
+        { "CovCode": "UMB-LIAB", "CovLimit": 5000000 }
+      ]
+    },
+    {
+      "PolicyNum": "PURE-77410-MAR",
+      "LOBCode": "Watercraft",
+      "Insured": { "FullName": "Whitfield Household" },
+      "PolicyEffDate": "2026-05-15",
+      "PolicyExpDate": "2027-05-15",
+      "AnnualPremiumAmt": 3400,
+      "Deductible": { "DeductibleAmt": 1000 },
+      "CoverageSchedule": [
+        { "CovCode": "HULL", "CovLimit": 450000 },
+        { "CovCode": "MAR-LIAB", "CovLimit": 2000000 }
+      ]
+    }
+  ]
+}

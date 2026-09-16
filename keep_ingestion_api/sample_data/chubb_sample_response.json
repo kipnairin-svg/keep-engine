@@ -1,0 +1,34 @@
+{
+  "policies": [
+    {
+      "policyNumber": "CHB-9931-AUTO",
+      "productLine": "PersonalAuto",
+      "namedInsured": { "name": "Whitfield Household" },
+      "effectiveDate": "2026-03-01",
+      "expirationDate": "2027-03-01",
+      "premium": { "annualAmount": 4180, "currency": "USD" },
+      "deductibles": [{ "type": "Collision", "amount": 500 }],
+      "coverages": [
+        { "coverageCode": "BI", "description": "Bodily Injury Liability", "limit": 500000 },
+        { "coverageCode": "PD", "description": "Property Damage Liability", "limit": 250000 }
+      ],
+      "vehicles": [
+        { "year": 2024, "make": "Range Rover", "model": "Autobiography" },
+        { "year": 2022, "make": "Porsche", "model": "911" }
+      ]
+    },
+    {
+      "policyNumber": "CHB-4471-HO",
+      "productLine": "Homeowners",
+      "namedInsured": { "name": "Whitfield Household" },
+      "effectiveDate": "2027-01-14",
+      "expirationDate": "2028-01-14",
+      "premium": { "annualAmount": 18750, "currency": "USD" },
+      "deductibles": [{ "type": "AllPeril", "amount": 10000 }],
+      "coverages": [
+        { "coverageCode": "DWELL", "description": "Dwelling", "limit": 6200000 },
+        { "coverageCode": "PP", "description": "Personal Property", "limit": 1200000 }
+      ]
+    }
+  ]
+}

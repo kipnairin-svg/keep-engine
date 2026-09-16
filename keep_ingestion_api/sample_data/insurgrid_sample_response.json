@@ -1,0 +1,43 @@
+{
+  "connection": {
+    "connection_id": "conn_7f3a91",
+    "household_ref": "demo-household-01",
+    "status": "complete",
+    "connected_at": "2026-07-22T14:03:00Z"
+  },
+  "documents": [
+    {
+      "document_id": "doc_a1",
+      "carrier_name": "Farmers",
+      "line_of_business": "Auto",
+      "named_insured": "Whitfield Household",
+      "policy_number": "FARM-6602-AU",
+      "effective_date": "2026-05-01",
+      "expiration_date": "2027-05-01",
+      "premium_total": 3120,
+      "deductibles": { "collision": 1000, "comprehensive": 500 },
+      "coverage_limits": [
+        { "label": "Bodily Injury per Person", "amount": 250000 },
+        { "label": "Bodily Injury per Accident", "amount": 500000 },
+        { "label": "Property Damage", "amount": 100000 }
+      ],
+      "extraction_confidence": 0.98
+    },
+    {
+      "document_id": "doc_b2",
+      "carrier_name": "Travelers",
+      "line_of_business": "Home",
+      "named_insured": "Whitfield Household",
+      "policy_number": "TRV-9981-HO",
+      "effective_date": "2026-02-15",
+      "expiration_date": "2027-02-15",
+      "premium_total": 5460,
+      "deductibles": { "all_peril": 5000 },
+      "coverage_limits": [
+        { "label": "Dwelling", "amount": 2850000 },
+        { "label": "Personal Property", "amount": 570000 }
+      ],
+      "extraction_confidence": 0.95
+    }
+  ]
+}
