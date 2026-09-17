@@ -38,7 +38,7 @@ import os
 import secrets
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "keep_ingestion_api"))
@@ -58,6 +58,7 @@ from fastapi import UploadFile, File  # noqa: E402
 from fastapi.responses import Response  # noqa: E402
 import csv_upload  # noqa: E402
 import pdf_extract  # noqa: E402
+import onepager  # noqa: E402
 
 
 security = HTTPBasic()
@@ -242,6 +243,29 @@ def get_report(household_id: int):
     findings = gap_rules.evaluate(policies, household.get("state"))
     db.save_findings(household_id, findings)
     return reports.build_report_html(household, findings)
+
+
+@app.get("/households/{household_id}/onepager")
+def get_onepager(household_id: int):
+    """
+    Downloadable, print-friendly one-page PDF for the client themselves --
+    top-level coverage snapshot + the same plain-language findings as the
+    report page's Household Notification section, laid out as an actual
+    file rather than only readable inside the app. Built from the same
+    real policy/gap data as everything else here.
+    """
+    household = db.get_household(household_id)
+    if not household:
+        raise HTTPException(404, "Household not found")
+    policies = db.get_policies(household_id)
+    findings = gap_rules.evaluate(policies, household.get("state"))
+    pdf_bytes = onepager.build_onepager_pdf(household, policies, findings)
+    safe_name = "".join(c for c in household["name"] if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Keep_Summary_{safe_name}.pdf"'},
+    )
 
 
 @app.get("/csv-template")
@@ -457,6 +481,7 @@ def home():
         "<input type=\'file\' accept=\'.csv\' style=\'display:none\' onchange=\'homeUploadCsv(this)\'></label>"
         "<label class=\'upload-pill\'>Upload PDF \u2192 New Client"
         "<input type=\'file\' accept=\'.pdf\' style=\'display:none\' onchange=\'homeUploadPdf(this)\'></label>"
+        "<label class=\'upload-pill\' style=\'cursor:pointer;\' onclick=\'connectCarriers()\'>Connect via Chubb + PURE \u2192 New Client</label>"
         "<span id=\'home-upload-status\'></span>"
         "</div>"
         "<h2 class=\'section\'>Recent Clients</h2>"
@@ -487,6 +512,19 @@ def home():
         "    window.location = data.redirect + \'?prefill=\' + encoded;"
         "  } catch(e) { statusEl.textContent = \'Upload failed \u2014 is the server running?\'; }"
         "}"
+        "async function connectCarriers(){"
+        "  const statusEl = document.getElementById(\'home-upload-status\');"
+        "  try {"
+        "    statusEl.textContent = \'Connecting to Chubb Studio...\';"
+        "    const hhRes = await fetch(\'/households\', {method:\'POST\', headers:{\'Content-Type\':\'application/json\'}, body: JSON.stringify({name:\'Whitfield Household\', state:\'UT\'})});"
+        "    const hh = await hhRes.json();"
+        "    await fetch(`/households/${hh.id}/ingest/chubb`, {method:\'POST\'});"
+        "    statusEl.textContent = \'Connecting to PURE (OneShield)...\';"
+        "    await fetch(`/households/${hh.id}/ingest/pure`, {method:\'POST\'});"
+        "    statusEl.textContent = \'Syncing coverage...\';"
+        "    window.location = `/households/${hh.id}/report`;"
+        "  } catch(e) { statusEl.textContent = \'Connection failed \u2014 is the server running?\'; }"
+        "}"
         "</script>"
     )
     return render_page("Home", "home", body, extra_css=stat_css)
@@ -494,6 +532,12 @@ def home():
 
 @app.get("/")
 def root():
+    """Bare-URL visits go straight into the app instead of showing raw JSON."""
+    return RedirectResponse(url="/home")
+
+
+@app.get("/status")
+def status():
     return {
         "service": "Keep Engine",
         "status": "mock_mode — local SQLite, no real carrier credentials",

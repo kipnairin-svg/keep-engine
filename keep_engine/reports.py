@@ -76,6 +76,10 @@ def build_report_html(household: dict, findings: list[dict]) -> str:
       .notif li{margin-bottom:12px;font-size:14px;color:var(--ice);}
       .notif li strong{color:var(--text);}
       footer{text-align:center;padding:32px 0 10px;color:var(--muted);font-size:11px;}
+      .dl-row{text-align:center;margin-top:-8px;}
+      .dl-btn{display:inline-block;background:var(--gold);color:var(--navy);font-weight:700;font-size:12.5px;
+              padding:8px 20px;border-radius:20px;text-decoration:none;letter-spacing:.3px;}
+      .dl-btn:hover{opacity:.9;}
     """
 
     return (
@@ -90,6 +94,9 @@ def build_report_html(household: dict, findings: list[dict]) -> str:
         '<p class="sub">Generated from ingested policy data · '
         + (household.get("state") or "state not set") + " · " + date.today().isoformat() + "</p>"
         "</header>"
+        '<div class="dl-row">'
+        '<a class="dl-btn" href="/households/' + str(household["id"]) + '/onepager" download>Download Client One-Pager (PDF)</a>'
+        "</div>"
         '<div class="wrap">'
         "<section>"
         '<p class="label">Output 1 · Gap Alerts</p>'
