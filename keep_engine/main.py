@@ -224,6 +224,19 @@ def add_manual_policy(household_id: int, req: ManualPolicyInput):
     return {"household_id": household_id, "policy_id": policy.policy_id, "source_tier": "document_capture"}
 
 
+@app.delete("/households/{household_id}")
+def remove_household(household_id: int):
+    """
+    Permanently deletes a household and all of its policies/findings.
+    Backs the Clients page's Remove action -- irreversible, so that UI
+    confirms with the user before ever calling this.
+    """
+    deleted = db.delete_household(household_id)
+    if not deleted:
+        raise HTTPException(404, "Household not found")
+    return {"deleted": True, "household_id": household_id}
+
+
 @app.get("/households/{household_id}/policies")
 def get_policies(household_id: int):
     if not db.get_household(household_id):
@@ -407,7 +420,14 @@ async def create_household_from_pdf(file: UploadFile = File(...)):
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    """The Clients list -- every household, its findings count, a link to its report."""
+    """
+    The Clients list -- every household, its findings count, a link to its
+    report, and now Add/Remove: a "+ New Client" shortcut into the manual
+    intake form, and a per-row Remove action wired to
+    DELETE /households/{id}. Remove is irreversible (drops the household's
+    policies and cached findings too), so it always confirms with the user
+    client-side before firing.
+    """
     households = db.list_households()
     rows = ""
     for h in households:
@@ -415,22 +435,46 @@ def dashboard():
         findings = gap_rules.evaluate(policies, h.get("state"))
         high = sum(1 for f in findings if f["severity"] == "high")
         med = sum(1 for f in findings if f["severity"] == "medium")
+        safe_name = h["name"].replace("\\", "\\\\").replace("'", "\\'")
         rows += (
             "<tr><td>" + str(h["id"]) + "</td>"
             "<td>" + h["name"] + "</td>"
             "<td>" + (h.get("state") or "\u2014") + "</td>"
             "<td><span class=\'badge badge-high\'>" + str(high) + " high</span> "
             "<span class=\'badge badge-medium\'>" + str(med) + " medium</span></td>"
-            "<td><a href=\'/households/" + str(h["id"]) + "/report\'>View report \u2192</a></td></tr>"
+            "<td class=\'actions\'>"
+            "<a href=\'/households/" + str(h["id"]) + "/report\'>View report \u2192</a>"
+            "<a href=\'#\' class=\'remove-link\' onclick=\"removeClient(" + str(h["id"]) + ", '" + safe_name + "'); return false;\">Remove</a>"
+            "</td></tr>"
         )
-    empty_row = "<tr><td colspan=\'5\' style=\'color:var(--muted);\'>No clients yet \u2014 use + New Client above, or upload a file from Home.</td></tr>"
+    empty_row = "<tr><td colspan=\'5\' style=\'color:var(--muted);\'>No clients yet \u2014 use + New Client below, or upload a file from Home.</td></tr>"
+    clients_css = """
+      .clients-toolbar{display:flex;justify-content:flex-end;margin-bottom:16px;}
+      .new-client-btn{display:inline-block;background:var(--gold);color:var(--navy);font-weight:700;
+        font-size:12.5px;padding:8px 20px;border-radius:20px;text-decoration:none;letter-spacing:.3px;}
+      .new-client-btn:hover{opacity:.9;}
+      td.actions{display:flex;gap:14px;align-items:center;}
+      .remove-link{color:var(--muted);font-weight:600;font-size:12.5px;}
+      .remove-link:hover{color:var(--badtext);}
+    """
     body = (
         "<h1>Clients</h1>"
+        "<div class=\'clients-toolbar\'><a class=\'new-client-btn\' href=\'/intake\'>+ New Client</a></div>"
         "<table><tr><th>ID</th><th>Client</th><th>State</th><th>Findings</th><th></th></tr>"
         + (rows or empty_row) +
         "</table>"
+        "<script>"
+        "async function removeClient(id, name){"
+        "  if(!confirm('Remove ' + name + '? This permanently deletes their policies and findings \u2014 this cannot be undone.')) return;"
+        "  try {"
+        "    const res = await fetch('/households/' + id, {method:'DELETE'});"
+        "    if(!res.ok){ alert('Could not remove that client.'); return; }"
+        "    window.location.reload();"
+        "  } catch(e) { alert('Remove failed \u2014 is the server running?'); }"
+        "}"
+        "</script>"
     )
-    return render_page("Clients", "clients", body)
+    return render_page("Clients", "clients", body, extra_css=clients_css)
 
 
 @app.get("/home", response_class=HTMLResponse)
