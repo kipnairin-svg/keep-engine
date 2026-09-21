@@ -66,17 +66,26 @@ security = HTTPBasic()
 
 def require_auth(credentials: HTTPBasicCredentials = Depends(security)):
     """
-    HTTP Basic Auth, on for every route in this app -- required before this
-    can safely sit on a public URL (Render, etc.), since without it anyone
-    with the link could see or create household coverage data. Credentials
-    come from environment variables so the real password never lives in
-    this source file:
+    HTTP Basic Auth -- NOT currently wired up to the app (see `app =
+    FastAPI(...)` below, which no longer passes this as a dependency).
+    Kept here so it's a one-line change to turn back on: add
+    `dependencies=[Depends(require_auth)]` back to the FastAPI(...) call.
+
+    Credentials come from environment variables so the real password never
+    lives in this source file:
       KEEP_ENGINE_USER      (defaults to "keep")
       KEEP_ENGINE_PASSWORD  (defaults to "changeme-please" -- override this
                               in Render's dashboard before deploying for
                               real; the default is only meant to make local
                               runs work out of the box, never for anything
                               public)
+
+    Heads up: with this off, this app has NO access control. Every
+    household's real policy data (names, addresses, premiums, coverage
+    limits) is visible to anyone with the URL, and household pages are
+    just /households/1, /households/2, etc. -- trivially guessable. Fine
+    for a short-lived demo you control the link to; turn auth back on
+    before this sits up for any length of time.
     """
     expected_user = os.getenv("KEEP_ENGINE_USER", "keep")
     expected_pass = os.getenv("KEEP_ENGINE_PASSWORD", "changeme-please")
@@ -95,7 +104,6 @@ app = FastAPI(
     title="Keep Engine",
     description="Household intake -> policy ingestion -> gap detection -> the three real product outputs.",
     version="0.1.0",
-    dependencies=[Depends(require_auth)],
 )
 
 db.init_db()
