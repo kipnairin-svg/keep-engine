@@ -135,3 +135,21 @@ def get_findings(household_id: int) -> list[dict]:
             (household_id,),
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+def delete_household(household_id: int) -> bool:
+    """
+    Permanently removes a household and everything under it (policies,
+    cached gap findings). Used by the Clients page's Remove action --
+    irreversible, so the UI is expected to confirm with the user before
+    ever calling this. Returns False (no-op) if the household doesn't
+    exist, so callers can 404 instead of silently "succeeding."
+    """
+    with get_conn() as conn:
+        row = conn.execute("SELECT id FROM households WHERE id = ?", (household_id,)).fetchone()
+        if not row:
+            return False
+        conn.execute("DELETE FROM gap_findings WHERE household_id = ?", (household_id,))
+        conn.execute("DELETE FROM policies WHERE household_id = ?", (household_id,))
+        conn.execute("DELETE FROM households WHERE id = ?", (household_id,))
+        return True
